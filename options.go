@@ -15,6 +15,8 @@ type Config struct {
 	initialJSONState map[string]any
 	initArgs         [][]byte
 	contextSetups    []func(*Context) error
+	prettyOutput     bool
+	colorOutput      *bool
 }
 
 func defaultSuiteConfig() Config {
@@ -26,6 +28,7 @@ func defaultSuiteConfig() Config {
 			ID:         "cctest-user",
 			Attributes: map[string]string{},
 		},
+		prettyOutput: true,
 	}
 }
 
@@ -99,6 +102,20 @@ func WithInitialJSONState(state map[string]any) Option {
 func WithInitArgs(args ...[]byte) Option {
 	return func(config *Config) {
 		config.initArgs = cloneArgs(args)
+	}
+}
+
+// WithPrettyOutput controls cctest's Jest-like verbose reporter.
+func WithPrettyOutput(enabled bool) Option {
+	return func(config *Config) {
+		config.prettyOutput = enabled
+	}
+}
+
+// WithColorOutput controls ANSI colors in cctest's verbose reporter.
+func WithColorOutput(enabled bool) Option {
+	return func(config *Config) {
+		config.colorOutput = &enabled
 	}
 }
 

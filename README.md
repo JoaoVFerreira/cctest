@@ -44,6 +44,24 @@ Supported options:
 - `WithClientIdentity(cctest.ClientIdentity)`
 - `WithInitialState(map[string][]byte)`
 - `WithInitialJSONState(map[string]any)`
+- `WithPrettyOutput(bool)`
+- `WithColorOutput(bool)`
+
+## Terminal Output
+
+When tests run with `go test -v`, `cctest` prints a Jest-like reporter with colored `PASS`, `FAIL`, and `SKIP` lines plus a short summary. The native Go `=== RUN` and `--- PASS` lines still appear because suites are real `testing.T` subtests.
+
+Disable the reporter with `CCTEST_PRETTY=0` or per suite with `cctest.WithPrettyOutput(false)`. Disable ANSI colors with `NO_COLOR=1`, `CCTEST_COLOR=0`, or `cctest.WithColorOutput(false)`.
+
+For clean `go test -v` output without Go's duplicated `=== RUN` and `--- PASS` subtest lines, opt in with a package-level `TestMain`:
+
+```go
+func TestMain(m *testing.M) {
+    cctest.Main(m)
+}
+```
+
+Set `CCTEST_CLEAN=0` to keep Go's raw verbose output.
 
 ## Verification
 

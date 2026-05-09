@@ -149,10 +149,3 @@ func TestEachItReceivesIsolatedContext(t *testing.T) {
 		t.Fatalf("unexpected second test name: %q", names[1])
 	}
 }
-
-
-Commite as alterações com EXECEÇÃO dos arquivos
-- cc_integration_v1.md 
-- cc_tech_plan.md 
-- cc_unit_v1.md 
-- proposal_solution.md 

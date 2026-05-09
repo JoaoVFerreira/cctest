@@ -1,6 +1,10 @@
 package cctest
 
-import "testing"
+import (
+	"os"
+	"testing"
+	"time"
+)
 
 type hookFunc func(*Context)
 
@@ -41,7 +45,11 @@ func Describe(t *testing.T, name string, fn func(*Suite), opts ...Option) {
 		fn(suite)
 	}
 
-	suite.run(t, nil)
+	reporter := newPrettyReporter(os.Stdout, reporterEnabled(suite.config), reporterColorEnabled(suite.config), suite.name)
+	started := time.Now()
+	reporter.Start()
+	suite.run(t, nil, reporter)
+	reporter.Summary(time.Since(started), t.Failed())
 }
 
 func newSuite(name string) *Suite {
@@ -93,7 +101,7 @@ func (s *Suite) AfterEach(fn func(*Context)) {
 	}
 }
 
-func (s *Suite) run(t *testing.T, ancestors []*Suite) {
+func (s *Suite) run(t *testing.T, ancestors []*Suite, reporter *prettyReporter) {
 	t.Helper()
 
 	suite := s
@@ -103,22 +111,27 @@ func (s *Suite) run(t *testing.T, ancestors []*Suite) {
 		for _, node := range suite.nodes {
 			node := node
 			if node.suite != nil {
-				node.suite.run(t, chain)
+				node.suite.run(t, chain, reporter)
 				continue
 			}
 
 			if node.test != nil {
-				runTest(t, node.test, chain)
+				runTest(t, node.test, chain, reporter)
 			}
 		}
 	})
 }
 
-func runTest(t *testing.T, tc *testCase, suites []*Suite) {
+func runTest(t *testing.T, tc *testCase, suites []*Suite, reporter *prettyReporter) {
 	t.Helper()
 
 	test := tc
 	t.Run(test.name, func(t *testing.T) {
+		started := time.Now()
+		defer func() {
+			reporter.TestDone(testPath(suites, test), testStatusFromT(t), time.Since(started))
+		}()
+
 		if test.skip {
 			t.Skip("skipped")
 		}
@@ -132,6 +145,26 @@ func runTest(t *testing.T, tc *testCase, suites []*Suite) {
 			test.fn(ctx)
 		}
 	})
+}
+
+func testStatusFromT(t *testing.T) prettyTestStatus {
+	switch {
+	case t.Skipped():
+		return prettyTestSkipped
+	case t.Failed():
+		return prettyTestFailed
+	default:
+		return prettyTestPassed
+	}
+}
+
+func testPath(suites []*Suite, test *testCase) string {
+	parts := make([]string, 0, len(suites)+1)
+	for _, suite := range suites {
+		parts = append(parts, suite.name)
+	}
+	parts = append(parts, test.name)
+	return joinTestPath(parts)
 }
 
 func rootConfig(suites []*Suite) Config {
